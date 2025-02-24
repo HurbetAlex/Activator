@@ -1,6 +1,8 @@
 from fastapi import FastAPI, HTTPException, Query
 from pymongo import MongoClient
 import os
+import random
+import string
 import logging
 import uvicorn
 
@@ -19,6 +21,9 @@ db = client[DB_NAME]
 collection = db[COLLECTION_NAME]
 logging.info("Connected to MongoDB successfully")
 
+def generate_key():
+    parts = ["".join(random.choices(string.ascii_uppercase + string.digits, k=4)) for _ in range(3)]
+    return "-".join(parts)
 
 def get_activation_script():
     logging.info("Getting activation script ...")
@@ -29,8 +34,7 @@ def get_activation_script():
     logging.info("Activation script file not found")
     return None
 
-
-@app.get("/get-script", response_model=str)
+@app.get("/activation", response_model=str)
 def get_script(key: str = Query(..., title="Activation key")):
     logging.info(f"Received get request for key: {key}")
     logging.info("Checking key in MongoDB ...")
@@ -57,6 +61,12 @@ def get_script(key: str = Query(..., title="Activation key")):
         logging.warning("Key not in MongoDB")
         raise HTTPException(status_code=404, detail="Key not in MongoDB")
 
+@app.post("/create-key")
+def create_key(comment: str = Query(..., title="Comment for the key")):
+    new_key = generate_key()
+    collection.insert_one({"key": new_key, "uses": 0, "max_uses": 3, "comment": comment})
+    logging.info(f"New key created: {new_key} with comment: {comment}")
+    return {"key": new_key, "comment": comment}
 
 if __name__ == "__main__":
     logging.info("Starting server ...")
