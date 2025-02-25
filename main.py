@@ -70,4 +70,10 @@ def create_key(comment: str = Query(..., title="Comment for the key")):
 
 if __name__ == "__main__":
     logging.info("Starting server ...")
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(
+        app,
+        host="0.0.0.0",
+        port=443,
+        ssl_keyfile="/etc/letsencrypt/live/yourdomain.com/privkey.pem",
+        ssl_certfile="/etc/letsencrypt/live/yourdomain.com/fullchain.pem"
+    )
